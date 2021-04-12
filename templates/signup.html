@@ -30,8 +30,12 @@
                   <h2 style="text-align: center">Sign up</h2>
                 </div>
                 <div class="card-body">
-                    <input type="text" name="name" placeholder="User" required>
-                    <input type="password" name="password" placeholder="Password" required>
+                    <input type="text" name="name" placeholder="User" required> &nbsp;
+                    <input type="password" name="password" placeholder="Password" required> &nbsp;
+                    <input type="radio" name="mode" id="fernet" value="fernet">
+                    <label for="fernet">Fernet</label> &nbsp;
+                    <input type="radio" name="mode" id="aead" value="aead">
+                    <label for="aead">AEAD</label>
                 </div>
                 <div class="card-footer">
                     <button class="btn btn-success btn-block btn-sm" type="submit">

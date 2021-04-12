@@ -3,6 +3,9 @@ from flask import Flask, render_template, request, send_from_directory, redirect
 from werkzeug.utils import secure_filename
 from secure_delete import secure_delete
 from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives.ciphers import aead
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from cryptography.hazmat.primitives import hashes
 import boto3
 import base64
 from io import StringIO, BytesIO
@@ -16,11 +19,10 @@ AWS_SECRET_ACCESS_KEY_ID=os.getenv('AWS_SECRET_ACCESS_KEY_ID')
 app = Flask(__name__)
 path = './unsecure/'
 user_password = {}
+user_mode = {}
 user_key = {}
 
 #kms_client = boto3.client("kms", region_name='eu-central-1', aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY_ID)
-
-fernet = Fernet(base64.urlsafe_b64encode(os.urandom(32)))
 
 def create_cmk(description):
     """Creates a KMS Customer Master Key
@@ -111,18 +113,23 @@ def sign_up():
     if request.method == 'POST':
         name = request.form.get('name')
         password = request.form.get('password')
-        print('name: ' + name + ' -> password: ' + password)
+        mode = request.form.get('mode')
+        print('name: ' + name + ' -> password: ' + password + ' -> mode: ' + mode)
         try:
+            if (mode == 'fernet' or mode == 'aead'):
+                user_mode[name] = mode
+            else:
+                return redirect('/signup')
             user_password[name] = password
+            key = base64.urlsafe_b64encode(os.urandom(32))
             #key = create_data_key(create_cmk(name))
-            #user_key[name] = key
+            user_key[name] = key
             try:
                 os.mkdir(os.path.join(path, name))
             except:
                 pass
             return redirect('/')
-        except KeyError:
-            print("Error")
+        except:
             return redirect('/signup')
     else:
         return render_template('signup.html')
@@ -135,8 +142,15 @@ def upload_file():
         f = request.files['file']
         try:
             if user_password[name] == password:
-                #fernet = Fernet(user_key[name])
-                file_enc = fernet.encrypt(f.read())
+                key = user_key[name]
+                if user_mode[name] == 'fernet':
+                    fernet = Fernet(key)
+                    file_enc = fernet.encrypt(f.read())
+                else:
+                    derived_key_aead = HKDF(algorithm = hashes.SHA256(), length = 24, salt = None, info = None).derive(key)
+                    key_aead = base64.urlsafe_b64encode(derived_key_aead)
+                    aesgcm = aead.AESGCM(key_aead)
+                    file_enc = aesgcm.encrypt(b"12345678", f.read(), None)
                 with open(os.path.join(path + name + '/', secure_filename(f.filename)), 'wb') as file:
                     file.write(file_enc) 
                 # f.save(os.path.join(path + name + '/', secure_filename(f.filename)))
@@ -156,8 +170,15 @@ def upload(filename):
             if user_password[name] == password:
                 with open(os.path.join(path + name + '/', filename), "rb") as file:
                     file_enc = file.read()
-                #fernet = Fernet(user_key[name])
-                file_dec = fernet.decrypt(file_enc)
+                key = user_key[name]
+                if user_mode[name] == 'fernet':
+                    fernet = Fernet(key)
+                    file_dec = fernet.decrypt(file_enc)
+                else:
+                    derived_key_aead = HKDF(algorithm = hashes.SHA256(), length = 24, salt = None, info = None).derive(key)
+                    key_aead = base64.urlsafe_b64encode(derived_key_aead)
+                    aesgcm = aead.AESGCM(key_aead)
+                    file_dec = aesgcm.decrypt(b"12345678", file_enc, None)
                 file = BytesIO(file_dec)
                 return send_file(file, attachment_filename=filename)
                 #return send_from_directory(os.path.join(path, name), filename)
