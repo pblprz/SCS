@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Cloud Storage</title>
+    <!-- BOOTSTRAP -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BmbxuPwQa2lc/FVzBcNJ7UAyJxM6wuqIj61tLrc4wSX0szH/Ev+nYRRuWlolflfl" crossorigin="anonymous">
+    <!-- CUSTOM CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+
+<body>
+
+    <nav class="navbar navbar-light bg-light">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">Secure Cloud Storage</a>
+            <a class="navbar-brand" href="/signin">Sign in</a>
+            <a class="navbar-brand" href="/signup">Sign up</a>
+        </div>
+    </nav>
+
+    <br>
+
+    <div class="col-md-6 mx-auto">
+      <div class="card">
+        <div class="card-title">
+            <h2 style="text-align: center">Download files</h2>
+        </div>
+        <div class="card-body">
+          {% for file in files %}
+            <li>
+                <a href="/download/{{ file }}">
+                    {{ file }}
+                </a>
+            </li>
+          {% endfor %}
+        </div>
+      </div>
+
+      <br>
+
+      <form action="/upload" method="POST" enctype = "multipart/form-data">
+          <div class="card">
+              <div class="card-title">
+                <h2 style="text-align: center">Upload file</h2>
+              </div>
+              <div class="card-body">
+                  <input type = "file" name = "file">
+              </div>
+              <div class="card-footer">
+                  <button class="btn btn-success btn-block btn-sm" type="submit">
+                      Upload
+                  </button>
+              </div>
+          </div>
+      </form>
+  </div>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+</body>
+
+</html>
+
+<!--script type="text/javascript">
+
+  // Callback to send password
+  function sendPassword() {
+    ws.send(document.getElementById('inputPassword').value);
+    console.log(document.getElementById('inputPassword').value);
+    $('#exampleModal').modal('hide');
+    document.getElementById('inputPassword').value = "";
+  }
+
+  // Callback to remove device
+  function removeDevice(i) {
+    console.log("Borrando")
+    let filas = document.getElementById('contenido-tabla').innerHTML.split('</tr>');
+    let contenido = '<th scope="row">'+ i +'</th>';
+    for (let index = 0; index < filas.length; index++) {
+      if (filas[index].includes(contenido)) {
+        ws.send("unsubscribe: " + document.getElementById('deviceTable').rows[index+1].cells[1].innerHTML)
+        document.getElementById('deviceTable').deleteRow(index+1);
+        string2 = document.getElementById('contenido-tabla').innerHTML;
+        break;
+      }
+    }
+  }
+  
+  const ws = new WebSocket('ws://localhost:9001/');
+
+  var string = "";
+  var fila = "";
+  var string2 = "";
+  var string3 = "";
+  var contador = 1;
+
+  ws.onmessage = ({data}) => {
+    recibido = JSON.parse(data);
+    console.log(recibido.type)
+    if(recibido.type == 'conexion_dispositivo') {
+      string3 = string3.concat(recibido.payload, '<br>');
+      document.getElementById('rows').innerHTML = string3;
+    } else if (recibido.type == 'datos_dispositivos') {
+      var modo = JSON.parse(data).modo; 
+
+        if(recibido.mode == 0) {
+          modo = 'E';
+        }
+        else {
+          if(recibido.mode == 1) {
+            modo = 'S';
+          }
+          else {
+            if(recibido.mode == 2) {
+              modo = 'E/S'
+            }
+            else {
+              if(recibido.mode == 3) {
+                modo = 'No E/S';
+              }
+            }
+          }
+        }
+
+        fila ='<tr><th scope="row">'+contador+'</th><td>'+recibido.name+'</td><td>'+modo+'</td><td>'+ 
+          '<button type="button" class="btn btn-danger" onclick="removeDevice(' + contador + ')">Eliminar</button>' +'</td></tr>';
+        string2 = string2.concat(fila, '<br>');
+        contador++;
+
+        document.getElementById('contenido-tabla').innerHTML = string2;
+        $('#exampleModal2').modal('hide');
+
+    } else if (recibido.type == 'hmac') {
+      if (recibido.mode > 0) {
+        var nombreDispositivo = 'Dispositivo: ' + recibido.name;
+        document.getElementById('nombre-dispositivo').innerHTML = nombreDispositivo;
+        $('#exampleModal').modal('show');
+      } else {
+        var nombreDispositivo = 'Dispositivo: ' + recibido.name;
+        document.getElementById('nombre-dispositivo2').innerHTML = nombreDispositivo;
+        document.getElementById('hmac_key').innerHTML = recibido.hmac_key;
+        $('#exampleModal2').modal('show');
+      }
+    } else if (recibido.type == 'message') {
+      string3 = string3.concat(recibido.name, ':', recibido.payload, '<br>');
+      document.getElementById('rows').innerHTML = string3;
+    }
+   
+  };
+</script-->

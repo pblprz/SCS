@@ -1,0 +1,23 @@
+
+
+.plataforma {
+    margin: 60px;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    border-style: solid;
+    border-color: darkgray;
+    border-width: 1px;
+}
+
+.titulo {
+    margin: 10px;
+}
+
+ul {
+    min-height: 250px;
+    max-height: 250px;
+    text-align: center;
+    overflow: scroll;    
+}
+
