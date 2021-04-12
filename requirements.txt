@@ -1,0 +1,5 @@
+flask
+cryptography
+werkzeug
+secure_delete
+python-dotenv
