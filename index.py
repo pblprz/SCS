@@ -152,6 +152,7 @@ def upload_file():
         try:
             # Check if password is correct, upload file and save it encrypted
             if user_password[name] == password:
+                # Get encrypted key and key
                 key_enc, key = create_data_key(retrieve_cmk(name))
                 # Encrypt using Fernet
                 if user_mode[name] == 'fernet':
@@ -193,11 +194,11 @@ def upload(filename):
                 key_enc = file_enc[NUM_BYTES_FOR_LEN:key_enc_len]
                 key = decrypt_data_key(key_enc)
                 if user_mode[name] == 'fernet':
-                    # Encrypt using Fernet
+                    # Decrypt using Fernet
                     fernet = Fernet(key)
                     file_dec = fernet.decrypt(file_enc[key_enc_len:])
                 else:
-                    # Encrypt using AEAD
+                    # Decrypt using AEAD
                     derived_key_aead = HKDF(algorithm = hashes.SHA256(), length = 24, salt = None, info = None).derive(key)
                     key_aead = base64.urlsafe_b64encode(derived_key_aead)
                     aesgcm = aead.AESGCM(key_aead)
